@@ -32,10 +32,10 @@ pitin-eks/
 
 ## 서비스 목록
 
-| 서비스 | 경로 | 환경 |
-|--------|------|------|
-| BSMS | service.pitin-ev.com/bsms | Live |
-| BSMS-dev | service.pitin-ev.com/bsms-dev | Dev |
+| 서비스   | 경로                          | 환경 |
+| -------- | ----------------------------- | ---- |
+| BSMS     | service.pitin-ev.com/bsms     | Live |
+| BSMS-dev | service.pitin-ev.com/bsms-dev | Dev  |
 
 ## 사전 요구사항
 
@@ -113,8 +113,8 @@ kubectl get ingress -n pitin-service -o jsonpath='{.items[0].status.loadBalancer
 
 도메인 관리 툴에서 CNAME 레코드를 추가합니다:
 
-| 호스트 | 타입 | 값 |
-|--------|------|-----|
+| 호스트  | 타입  | 값                                                     |
+| ------- | ----- | ------------------------------------------------------ |
 | service | CNAME | `k8s-pitinser-xxxxxx.ap-northeast-2.elb.amazonaws.com` |
 
 ## 배포 확인
@@ -149,10 +149,58 @@ kubectl get secret bsms-dev-backend-secret -n pitin-service -o json | jq -r '.da
 
 ## API 문서 (Swagger)
 
-| 서비스 | Swagger URL |
-|--------|-------------|
-| BSMS | https://service.pitin-ev.com/bsms/swagger-ui/index.html |
+| 서비스   | Swagger URL                                                 |
+| -------- | ----------------------------------------------------------- |
+| BSMS     | https://service.pitin-ev.com/bsms/swagger-ui/index.html     |
 | BSMS-dev | https://service.pitin-ev.com/bsms-dev/swagger-ui/index.html |
+
+## 컨테이너 이미지 업데이트 (코드 변경 시)
+
+Kubernetes 설정 변경 없이 코드만 수정한 경우, ECR에 새 이미지 푸시 후 파드를 재시작합니다.
+
+### 1. ECR에 새 이미지 푸시
+
+```bash
+# ECR 로그인
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 395164469276.dkr.ecr.ap-northeast-2.amazonaws.com
+
+# 이미지 빌드 및 푸시
+docker build --platform linux/amd64 -t bsms-v2-backend .
+docker tag bsms-v2-backend:latest 395164469276.dkr.ecr.ap-northeast-2.amazonaws.com/bsms-v2-backend:latest
+docker push 395164469276.dkr.ecr.ap-northeast-2.amazonaws.com/bsms-v2-backend:latest
+```
+
+### 2. 파드 재시작 (새 이미지 적용)
+
+```bash
+# BSMS 라이브
+kubectl rollout restart deployment/bsms-backend -n pitin-service
+
+# BSMS 개발
+kubectl rollout restart deployment/bsms-dev-backend -n pitin-service
+```
+
+### 3. 배포 상태 확인
+
+```bash
+# 롤아웃 진행 상황 확인
+kubectl rollout status deployment/bsms-backend -n pitin-service
+kubectl rollout status deployment/bsms-dev-backend -n pitin-service
+
+# 파드 상태 확인
+kubectl get pods -n pitin-service -w
+```
+
+### 4. 롤백 (문제 발생 시)
+
+```bash
+# 이전 버전으로 롤백
+kubectl rollout undo deployment/bsms-backend -n pitin-service
+kubectl rollout undo deployment/bsms-dev-backend -n pitin-service
+
+# 롤아웃 이력 확인
+kubectl rollout history deployment/bsms-backend -n pitin-service
+```
 
 ## Secret 업데이트
 
