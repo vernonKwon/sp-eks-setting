@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: pitin-service
+  name: bsms-dev-backend
+  labels:
+    app: bsms-dev-backend
+    environment: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bsms-dev-backend
+  template:
+    metadata:
+      labels:
+        app: bsms-dev-backend
+        environment: dev
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: bsms-dev-backend
+          image: 395164469276.dkr.ecr.ap-northeast-2.amazonaws.com/bsms-v2-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "dev"
+          envFrom:
+            - secretRef:
+                name: bsms-dev-backend-secret
