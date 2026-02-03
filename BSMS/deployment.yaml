@@ -7,6 +7,11 @@ metadata:
     app: bsms-backend
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: bsms-backend
@@ -23,6 +28,24 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 15"]
+          readinessProbe:
+            httpGet:
+              path: /bsms/actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /bsms/actuator/health
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            failureThreshold: 3
           resources:
             requests:
               cpu: 250m
