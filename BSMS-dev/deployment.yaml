@@ -49,6 +49,13 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 20
             failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "dev"
